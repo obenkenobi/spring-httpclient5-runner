@@ -1,0 +1,30 @@
+allprojects {}
+
+subprojects {
+    tasks.register("prepareKotlinBuildScriptModel"){}
+
+    def isJavaProject = ['spring'].contains(projectType)
+    def isSpringProject = 'spring'.contentEquals(project.properties.projectType)
+
+    if (isJavaProject) {
+        apply plugin: 'java'
+        apply plugin: 'application'
+
+        sourceCompatibility = '17'
+        repositories {
+            mavenCentral()
+        }
+
+        if (isSpringProject) {
+            apply plugin: 'io.spring.dependency-management'
+            apply plugin: 'org.springframework.boot'
+        }
+
+        project.applicationDefaultJvmArgs = ["-javaagent:${project.file('newrelic/newrelic.jar')}",
+                                     "-Dnewrelic.config.file=${project.file('newrelic/config/newrelic.yml')}"]
+        println(applicationDefaultJvmArgs)
+
+    }
+
+
+}
