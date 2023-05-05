@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class ClientController {
 
     @GetMapping("/stream")
-    public List<String> stream() {
+    public List<String> stream() throws ExecutionException, InterruptedException, IOException {
 
         try (CloseableHttpAsyncClient client = HttpAsyncClients.createDefault()) {
 
@@ -82,10 +82,53 @@ public class ClientController {
             }
             return responses;
 
-        } catch (IOException | ExecutionException | InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
+
+    @GetMapping("/streamOne")
+    public String streamOne() throws IOException, ExecutionException, InterruptedException {
+
+        try (CloseableHttpAsyncClient client = HttpAsyncClients.createDefault()) {
+
+            final HttpHost target = new HttpHost("localhost", 8081);
+
+            client.start();
+
+            String name = "joseph";
+
+            final SimpleHttpRequest request = SimpleRequestBuilder.get()
+                    .setHttpHost(target)
+                    .setPath("/hello")
+                    .addParameter("name", name)
+                    .build();
+
+            var res= client.execute(SimpleRequestProducer.create(request),
+                    SimpleResponseConsumer.create(),
+                    new FutureCallback<>() {
+
+                        @Override
+                        public void completed(final SimpleHttpResponse response) {
+                            System.out.println("completed callback " + NewRelic.getAgent().getTransaction());
+                            System.out.println(request + "->" + new StatusLine(response));
+                        }
+
+                        @Override
+                        public void failed(final Exception ex) {
+                            System.out.println("failed callback " + NewRelic.getAgent().getTransaction());
+                            System.out.println(request + "->" + ex);
+                        }
+
+                        @Override
+                        public void cancelled() {
+                            System.out.println("cancelled callback " + NewRelic.getAgent().getTransaction());
+                            System.out.println(request + " cancelled");
+                        }
+
+                    }).get();
+            return res.getBodyText();
+        }
+    }
+
     @GetMapping("/sync")
     public String sync() throws IOException {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {

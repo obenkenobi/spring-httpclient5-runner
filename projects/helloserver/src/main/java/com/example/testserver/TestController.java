@@ -6,7 +6,6 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
-import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -17,9 +16,9 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
-import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,7 +26,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,8 @@ public class TestController {
     private static final String BASE_URL = "cat-fact.herokuapp.com";
 
     @GetMapping("/hello")
-    String hello(@RequestParam(name="name", defaultValue = "world") String name) throws ExecutionException, InterruptedException {
+    String hello(@RequestParam(name="name", defaultValue = "world") String name, @RequestHeader Map<String, String> headers) throws ExecutionException, InterruptedException {
+        printHeaders(name, headers);
 
         try(CloseableHttpAsyncClient client = HttpAsyncClients.createDefault()) {
             final HttpHost target = new HttpHost(BASE_URL);
@@ -96,5 +98,17 @@ public class TestController {
             });
             return "Hello " + name + "!!!\n" + clientRes;
         }
+    }
+
+    private void printHeaders(String name, Map<String, String> headers) {
+        List<String> lines = new ArrayList<>(3 + headers.size());
+        lines.add("____________________________________________________________________________________");
+        lines.add("Begin Printing Headers for name: " + name);
+        System.out.println();
+        for(var h: headers.entrySet()) {
+            lines.add("[Log Header] | " + h.getKey() + " | " + h.getValue());
+        }
+        lines.add("____________________________________________________________________________________");
+        System.out.println(String.join("\n", lines));
     }
 }
