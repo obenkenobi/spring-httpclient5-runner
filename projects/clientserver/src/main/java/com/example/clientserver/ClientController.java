@@ -8,13 +8,22 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -25,7 +34,7 @@ import java.util.stream.Collectors;
 public class ClientController {
 
     @GetMapping("/stream")
-    public List<String> callData() {
+    public List<String> stream() {
 
         try (CloseableHttpAsyncClient client = HttpAsyncClients.createDefault()) {
 
@@ -76,7 +85,22 @@ public class ClientController {
         } catch (IOException | ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+    @GetMapping("/sync")
+    public String sync() throws IOException {
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            final HttpHost target = new HttpHost("localhost", 8081);
+            ClassicHttpRequest request = ClassicRequestBuilder.get(target.toURI()).setPath("/helloSync").build();
 
+            return httpclient.execute(request, response -> {
+                System.out.println(response.getCode() + " " + response.getReasonPhrase());
+                final HttpEntity entity = response.getEntity();
+                String text = new BufferedReader(new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))
+                        .lines().collect(Collectors.joining("\n"));
+                EntityUtils.consume(entity);
+                return text;
+            });
+        }
     }
 
 }
