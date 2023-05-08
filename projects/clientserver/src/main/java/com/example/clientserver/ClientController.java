@@ -133,7 +133,7 @@ public class ClientController {
     public String sync() throws IOException {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             final HttpHost target = new HttpHost("localhost", 8081);
-            ClassicHttpRequest request = ClassicRequestBuilder.get(target.toURI()).setPath("/helloSync").build();
+            ClassicHttpRequest request = ClassicRequestBuilder.get(target.toURI()).setPath("/hello").build();
 
             return httpclient.execute(request, response -> {
                 System.out.println(response.getCode() + " " + response.getReasonPhrase());
